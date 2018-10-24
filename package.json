@@ -1,6 +1,7 @@
 {
   "name": "crowdfunding-ethereum",
   "version": "0.1.0",
+  "homepage": "http://mehradsadeghi.github.io/crowdfunding-ethereum",
   "private": true,
   "dependencies": {
     "fs-extra": "^7.0.0",
