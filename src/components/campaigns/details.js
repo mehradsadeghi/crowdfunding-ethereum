@@ -1,15 +1,15 @@
 import React, { Component } from 'react';
 import Layout from '../layout';
-import {Grid, Card, Form, Button, Input, Message} from 'semantic-ui-react';
-import {Link} from 'react-router-dom';
-import Campaign from '../ethereum/campaign-contract';
-import web3 from '../ethereum/web3';
+import { Grid, Card, Form, Button, Input, Message } from 'semantic-ui-react';
+import { Link, Redirect } from 'react-router-dom';
+import Campaign from '../../ethereum/campaign-contract';
+import web3 from '../../ethereum/web3';
 
 export default class CampaignsDetails extends Component {
 
   constructor(props) {
     super(props);
-    
+
     this.address = this.props.match.params.address;
 
     this.state = {
@@ -22,14 +22,14 @@ export default class CampaignsDetails extends Component {
       error: '',
       success: false,
       loading: false
-    }; 
+    };
   }
 
   async componentDidMount() {
-    
+
     const campaign = Campaign(this.address);
     const summary = await campaign.methods.getSummary().call();
-    
+
     this.setState({
       minimumContribution: summary[0],
       balance: summary[1],
@@ -40,10 +40,14 @@ export default class CampaignsDetails extends Component {
   }
 
   renderCards() {
-    
+
+    if (!this.state.minimumContribution) {
+      return <h3>Loading...</h3>;
+    }
+
     const items = [
       {
-        header: <div className="header" style={{overflowWrap: 'break-word'}}>{this.state.manager}</div>,
+        header: <div className="header" style={{ overflowWrap: 'break-word' }}>{this.state.manager}</div>,
         description: 'The manager creates this campaign and can create requests to withdraw money',
         meta: 'Address of Manager'
       },
@@ -68,61 +72,61 @@ export default class CampaignsDetails extends Component {
         meta: 'Campaign Balance (ether)'
       },
     ];
-    
+
     return <Card.Group items={items} />;
   }
 
   renderContributionForm() {
     return (
-      <Form onSubmit={this.onSubmit} loading={this.state.loading}>
-      <Form.Field>
+      <Form onSubmit={this.onContribute} loading={this.state.loading}>
+        <Form.Field>
           <label>Amount to Contribute</label>
-          <Input label="ether" labelPosition="right" onChange={event => this.setState({value: event.target.value})}/>
-      </Form.Field>
-      <Button primary>Contribute!</Button>
-  </Form>
+          <Input label="ether" labelPosition="right" onChange={event => this.setState({ value: event.target.value })} />
+        </Form.Field>
+        <Button primary>Contribute!</Button>
+      </Form>
     );
   }
 
   validateInput() {
     return this.state.value.match(/^[0-9.]+$/g);
-  } 
+  }
 
-  onSubmit = async event => {
+  onContribute = async event => {
     event.preventDefault();
 
-    this.setState({success: false});
-        
-    if(!this.validateInput()) {
-        this.setState({error: 'Please enter a correct number!'});
-        return;
+    this.setState({ success: false });
+
+    if (!this.validateInput()) {
+      this.setState({ error: 'Please enter a correct number!' });
+      return;
     }
 
     const accounts = await web3.eth.getAccounts();
 
     // checking if metamask is enabled
-    if(!accounts[0]) {
-        this.setState({error: 'Please sign in to your metamask account'});
-        return;
+    if (!accounts[0]) {
+      this.setState({ error: 'Please sign in to your metamask account' });
+      return;
     }
 
-    this.setState({error: '', loading: true});
+    this.setState({ error: '', loading: true });
 
     const campaign = Campaign(this.address);
-    
+
     try {
-      
+
       await campaign.methods.contribute().send({
         from: accounts[0],
         value: web3.utils.toWei(this.state.value, 'ether')
       });
 
-      this.setState({success: true});
-    } catch(error) {
-      this.setState({error: error.message});
+      this.setState({ success: true });
+    } catch (error) {
+      this.setState({ error: error.message });
     }
-    
-    this.setState({loading: false});
+
+    this.setState({ loading: false });
   };
 
   render() {
@@ -130,26 +134,26 @@ export default class CampaignsDetails extends Component {
     const waitingMessage = this.state.loading ? <Message warning header="Notice!" content="Contribution might take 10 to 15 seconds. Please be patient." /> : '';
     const errorMessage = this.state.error ? <Message error header="Error!" content={this.state.error} /> : '';
     const successMessage = this.state.success ? <Message success header="Congrats!" content={`You just contributed ${this.state.value} ether to this campaign.`} /> : '';
-    
+
     return (
-        <Layout> 
-           <Grid>
-             <Grid.Row columns="2">
-              <Grid.Column width="11">
-                {this.renderCards()}
-                <Link to={`/campaigns/${this.address}/requests`}>
-                  <Button primary style={{marginTop: '15px'}}>Show Requests</Button>
-                </Link>
-              </Grid.Column>
-              <Grid.Column width="5">
-                {this.renderContributionForm()}
-                {waitingMessage}   
-                {errorMessage}   
-                {successMessage} 
-              </Grid.Column>
-             </Grid.Row>
-           </Grid>
-        </Layout>
+      <Layout>
+        <Grid>
+          <Grid.Row columns="2">
+            <Grid.Column width="11">
+              {this.renderCards()}
+              <Link to={`/campaigns/${this.address}/requests`}>
+                <Button primary style={{ marginTop: '15px' }}>Show Requests</Button>
+              </Link>
+            </Grid.Column>
+            <Grid.Column width="5">
+              {this.renderContributionForm()}
+              {waitingMessage}
+              {errorMessage}
+              {successMessage}
+            </Grid.Column>
+          </Grid.Row>
+        </Grid>
+      </Layout>
     );
   }
 }
