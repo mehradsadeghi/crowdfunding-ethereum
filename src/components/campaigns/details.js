@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import Layout from '../layout';
 import { Grid, Card, Form, Button, Input, Message } from 'semantic-ui-react';
-import { Link, Redirect } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Campaign from '../../ethereum/campaign-contract';
 import web3 from '../../ethereum/web3';
 

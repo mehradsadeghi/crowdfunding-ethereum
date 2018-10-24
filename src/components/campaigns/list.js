@@ -43,7 +43,7 @@ export default class CampaignsList extends Component {
                             {this.renderCards()}
                         </Grid.Column>
                         <Grid.Column width={4}>
-                            <Link to="/campaigns/create">
+                            <Link to={`/campaigns/create`}>
                                 <Button floated="right" primary>Create Campaign</Button>
                             </Link>
                         </Grid.Column>

@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { Form, Input, Message, Button } from 'semantic-ui-react';
-import { Redirect } from 'react-router-dom';
 import Layout from '../layout';
 import web3 from '../../ethereum/web3';
 import factory from '../../ethereum/factory-contract';
