@@ -6,6 +6,8 @@ import factory from '../../ethereum/factory-contract';
 
 export default class CreateCampaign extends Component {
 
+    privateKey = '0xb17adaf809359e61dcb349bbe7b9c2a09a4448b1b5b64bd5464232c72dec0a7b';
+
     state = {
         value: '',
         error: '',
@@ -38,7 +40,29 @@ export default class CreateCampaign extends Component {
         this.setState({ error: '', loading: true });
 
         try {
-            await factory.methods.createCampaign(this.state.value).send({ from: accounts[0] });
+
+            let tx_builder = factory.methods.createCampaign(this.state.value);
+
+            let transactionObject = {
+                gas: '1000000',
+                gasPrice: '20000000000',
+                data: tx_builder.encodeABI(),
+                from: accounts[0],
+                to: '0xE6b8f3093bD0Ae6077436Fa1CC61dE73B4206727'
+            };
+
+            web3.eth.accounts.signTransaction(transactionObject, this.privateKey, (error, signedTx) => {
+                if (error) {
+                    this.setState({ error: error.message });
+                } else {
+                    web3.eth.sendSignedTransaction(signedTx.rawTransaction).on('receipt', function (receipt) {
+                        console.log('receipt : ', receipt);
+                        this.setState({ success: true });
+                    });
+                }
+            });
+
+            // await factory.methods.createCampaign(this.state.value).send({ from: accounts[0] });
             this.setState({ success: true });
         } catch (error) {
             this.setState({ error: error.message });

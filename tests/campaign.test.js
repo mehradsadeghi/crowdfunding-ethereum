@@ -1,8 +1,8 @@
 const assert = require('assert');
 const Web3 = require('web3');
 const ganache = require('ganache-cli');
-const campaignContract = require('../ethereum/build/Campaign.json');
-const factoryContract = require('../ethereum/build/Factory.json');
+const campaignContract = require('../src/ethereum/build/Campaign.json');
+const factoryContract = require('../src/ethereum/build/Factory.json');
 
 const web3 = new Web3(ganache.provider());
 
