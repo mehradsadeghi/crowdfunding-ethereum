@@ -4,6 +4,9 @@ import { Link } from 'react-router-dom';
 import Layout from '../layout';
 import Campaign from '../../ethereum/campaign-contract';
 import web3 from '../../ethereum/web3';
+import { signAndSendTransaction } from '../../ethereum/helpers';
+import PrivateKeyModal from '../private-key-modal/private-key-modal';
+import { decode } from '../helpers';
 
 export default class CampaignsRequests extends Component {
 
@@ -22,7 +25,8 @@ export default class CampaignsRequests extends Component {
 				approve: {},
 				finalize: {}
 			},
-			message: ''
+			message: '',
+			privateKeyModal: false,
 		};
 	}
 
@@ -69,16 +73,19 @@ export default class CampaignsRequests extends Component {
 		});
 	}
 
+	closeModal = () => this.setState({ privateKeyModal: false });
+
 	onApprove = async index => {
 
 		this.setState({ success: false });
 
-		const accounts = await web3.eth.getAccounts();
+		let privateKey = sessionStorage.getItem('pkencoded');
 
-		// checking if metamask is enabled
-		if (!accounts[0]) {
-			this.setState({ error: 'Please sign in to your metamask account' });
+		if (!privateKey) {
+			this.setState({ privateKeyModal: true });
 			return;
+		} else {
+			privateKey = decode(privateKey);
 		}
 
 		let loading = this.state.loading;
@@ -86,7 +93,17 @@ export default class CampaignsRequests extends Component {
 		this.setState({ error: '', loading: loading, waiting: true, message: 'Approving' });
 
 		try {
-			await this.campaign.methods.approveRequest(index).send({ from: accounts[0] });
+
+			const approveRequest = await this.campaign.methods.approveRequest(index);
+
+			const options = {
+				to: approveRequest._parent._address,
+				data: approveRequest.encodeABI(),
+				gas: '1000000'
+			};
+
+			await signAndSendTransaction(options, privateKey);
+
 			this.setState({ success: true });
 		} catch (error) {
 			this.setState({ error: error.message });
@@ -96,15 +113,16 @@ export default class CampaignsRequests extends Component {
 		this.setState({ loading, waiting: false });
 	};
 
-	onFinalize = async (index) => {
+	onFinalize = async index => {
 		this.setState({ success: false });
 
-		const accounts = await web3.eth.getAccounts();
+		let privateKey = sessionStorage.getItem('pkencoded');
 
-		// checking if metamask is enabled
-		if (!accounts[0]) {
-			this.setState({ error: 'Please sign in to your metamask account' });
+		if (!privateKey) {
+			this.setState({ privateKeyModal: true });
 			return;
+		} else {
+			privateKey = decode(privateKey);
 		}
 
 		let loading = this.state.loading;
@@ -112,7 +130,17 @@ export default class CampaignsRequests extends Component {
 		this.setState({ error: '', loading: loading, waiting: true, message: 'Finalizing' });
 
 		try {
-			await this.campaign.methods.finalizeRequest(index).send({ from: accounts[0] });
+
+			const finalizeRequest = await this.campaign.methods.finalizeRequest(index);
+
+			const options = {
+				to: finalizeRequest._parent._address,
+				data: finalizeRequest.encodeABI(),
+				gas: '1000000'
+			};
+
+			await signAndSendTransaction(options, privateKey);
+
 			this.setState({ success: true });
 		} catch (error) {
 			this.setState({ error: error.message });
@@ -128,6 +156,7 @@ export default class CampaignsRequests extends Component {
 		const errorMessage = this.state.error ? <Message error header="Error!" content={this.state.error} /> : '';
 		const successMessage = this.state.success ? <Message success header="Congrats!" content={`${this.state.message} the request is done.`} /> : '';
 		const fetchingMessage = this.state.requests.length === 0 ? <h3>Nothing yet...</h3> : '';
+		const privateKeyModal = this.state.privateKeyModal ? <PrivateKeyModal closeModal={this.closeModal} /> : '';
 
 		return (
 			<Layout>
@@ -168,6 +197,7 @@ export default class CampaignsRequests extends Component {
 				{waitingMessage}
 				{errorMessage}
 				{successMessage}
+				{privateKeyModal}
 			</Layout>
 		);
 	}

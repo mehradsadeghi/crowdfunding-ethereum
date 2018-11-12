@@ -60,7 +60,7 @@ contract Campaign {
         requests.push(newRequest);
     }
     
-    function approveRequest(uint requestIndex) {
+    function approveRequest(uint requestIndex) public {
 
         Request storage request = requests[requestIndex];
 

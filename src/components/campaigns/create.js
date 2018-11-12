@@ -1,23 +1,26 @@
 import React, { Component } from 'react';
 import { Form, Input, Message, Button } from 'semantic-ui-react';
 import Layout from '../layout';
-import web3 from '../../ethereum/web3';
 import factory from '../../ethereum/factory-contract';
+import { signAndSendTransaction } from '../../ethereum/helpers';
+import PrivateKeyModal from '../private-key-modal/private-key-modal';
+import { decode } from '../helpers';
 
 export default class CreateCampaign extends Component {
-
-    privateKey = '0xb17adaf809359e61dcb349bbe7b9c2a09a4448b1b5b64bd5464232c72dec0a7b';
 
     state = {
         value: '',
         error: '',
         success: false,
-        loading: false
+        loading: false,
+        privateKeyModal: false,
     };
 
     validateInput() {
         return this.state.value.match(/^[0-9]+$/g);
     }
+
+    closeModal = () => this.setState({ privateKeyModal: false });
 
     onSubmit = async event => {
         event.preventDefault();
@@ -29,40 +32,29 @@ export default class CreateCampaign extends Component {
             return;
         }
 
-        const accounts = await web3.eth.getAccounts();
+        let privateKey = sessionStorage.getItem('pkencoded');
 
-        // checking if metamask is enabled
-        if (!accounts[0]) {
-            this.setState({ error: 'Please sign in to your metamask account' });
+        if (!privateKey) {
+            this.setState({ privateKeyModal: true });
             return;
+        } else {
+            privateKey = decode(privateKey);
         }
 
         this.setState({ error: '', loading: true });
 
         try {
 
-            let tx_builder = factory.methods.createCampaign(this.state.value);
+            const createCampaign = await factory.methods.createCampaign(this.state.value);
 
-            let transactionObject = {
-                gas: '1000000',
-                gasPrice: '20000000000',
-                data: tx_builder.encodeABI(),
-                from: accounts[0],
-                to: '0xE6b8f3093bD0Ae6077436Fa1CC61dE73B4206727'
+            const options = {
+                to: createCampaign._parent._address,
+                data: createCampaign.encodeABI(),
+                gas: '1000000'
             };
 
-            web3.eth.accounts.signTransaction(transactionObject, this.privateKey, (error, signedTx) => {
-                if (error) {
-                    this.setState({ error: error.message });
-                } else {
-                    web3.eth.sendSignedTransaction(signedTx.rawTransaction).on('receipt', function (receipt) {
-                        console.log('receipt : ', receipt);
-                        this.setState({ success: true });
-                    });
-                }
-            });
+            await signAndSendTransaction(options, privateKey);
 
-            // await factory.methods.createCampaign(this.state.value).send({ from: accounts[0] });
             this.setState({ success: true });
         } catch (error) {
             this.setState({ error: error.message });
@@ -76,6 +68,7 @@ export default class CreateCampaign extends Component {
         const waitingMessage = this.state.loading ? <Message warning header="Notice!" content="Creating campaign might take 10 to 15 seconds. Please be patient." /> : '';
         const errorMessage = this.state.error ? <Message error header="Error!" content={this.state.error} /> : '';
         const successMessage = this.state.success ? <Message success header="Congrats!" content="Your campaign is created successfully..." /> : '';
+        const privateKeyModal = this.state.privateKeyModal ? <PrivateKeyModal closeModal={this.closeModal} /> : '';
 
         return (
             <Layout>
@@ -90,6 +83,7 @@ export default class CreateCampaign extends Component {
                 {waitingMessage}
                 {errorMessage}
                 {successMessage}
+                {privateKeyModal}
             </Layout>
         );
     }

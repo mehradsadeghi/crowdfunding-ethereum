@@ -11,7 +11,7 @@ export default class App extends Component {
 	render() {
 
 		return (
-			<Router basename="/crowdfunding-ethereum-metamask">
+			<Router basename="/crowdfunding-ethereum">
 				<div className="App">
 					<Switch>
 						<Route exact path="/" component={CampaignsList} />

@@ -4,6 +4,9 @@ import { Form, Button, Input, Message } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 import Campaign from '../../ethereum/campaign-contract';
 import web3 from '../../ethereum/web3';
+import { signAndSendTransaction } from '../../ethereum/helpers';
+import PrivateKeyModal from '../private-key-modal/private-key-modal';
+import { decode } from '../helpers';
 
 export default class CampaignsCreateRequest extends Component {
 
@@ -18,7 +21,8 @@ export default class CampaignsCreateRequest extends Component {
 			value: '',
 			error: '',
 			success: false,
-			loading: false
+			loading: false,
+			privateKeyModal: false
 		};
 	}
 
@@ -28,6 +32,8 @@ export default class CampaignsCreateRequest extends Component {
 		const description = this.state.description.match(/^.+$/g);
 		return value && recipient && description;
 	}
+
+	closeModal = () => this.setState({ privateKeyModal: false });
 
 	onSubmit = async event => {
 		event.preventDefault();
@@ -39,12 +45,13 @@ export default class CampaignsCreateRequest extends Component {
 			return;
 		}
 
-		const accounts = await web3.eth.getAccounts();
+		let privateKey = sessionStorage.getItem('pkencoded');
 
-		// checking if metamask is enabled
-		if (!accounts[0]) {
-			this.setState({ error: 'Please sign in to your metamask account' });
+		if (!privateKey) {
+			this.setState({ privateKeyModal: true });
 			return;
+		} else {
+			privateKey = decode(privateKey);
 		}
 
 		this.setState({ error: '', loading: true });
@@ -55,7 +62,16 @@ export default class CampaignsCreateRequest extends Component {
 		const campaign = Campaign(this.address);
 
 		try {
-			await campaign.methods.makeRequest(description, value, recipient).send({ from: accounts[0] });
+			const makeRequest = await campaign.methods.makeRequest(description, value, recipient);
+
+			const options = {
+				to: makeRequest._parent._address,
+				data: makeRequest.encodeABI(),
+				gas: '1000000'
+			};
+
+			await signAndSendTransaction(options, privateKey);
+
 			this.setState({ success: true });
 		} catch (error) {
 			this.setState({ error: error.message });
@@ -69,6 +85,7 @@ export default class CampaignsCreateRequest extends Component {
 		const waitingMessage = this.state.loading ? <Message warning header="Notice!" content="Creating request might take 10 to 15 seconds. Please be patient." /> : '';
 		const errorMessage = this.state.error ? <Message error header="Error!" content={this.state.error} /> : '';
 		const successMessage = this.state.success ? <Message success header="Congrats!" content="Your request is created successfully." /> : '';
+		const privateKeyModal = this.state.privateKeyModal ? <PrivateKeyModal closeModal={this.closeModal} /> : '';
 
 		return (
 			<Layout>
@@ -94,6 +111,7 @@ export default class CampaignsCreateRequest extends Component {
 				{waitingMessage}
 				{errorMessage}
 				{successMessage}
+				{privateKeyModal}
 			</Layout>
 		);
 	}

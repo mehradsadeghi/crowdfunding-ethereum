@@ -1,16 +1,12 @@
-import Web3 from 'web3';
+const config = require('./config');
+const Web3 = require('web3');
 
-let web3;
+const networkMode = 'rinkeby';
 
-// if (typeof window.web3 === 'undefined') {
-//     const provider = new Web3.providers.HttpProvider('provider-url-with-cors-access');
-//     web3 = new Web3(provider);
-// } else {
-//     web3 = new Web3(window.web3.currentProvider);
-// }
+const port = config.network[networkMode].port;
 
-const networkAddress = 'http://127.0.0.1:7545';
+const networkAddress = `${config.network[networkMode].protocol}://${config.network[networkMode].host}${port ? `:${port}` : ''}`;
 const provider = new Web3.providers.HttpProvider(networkAddress);
-web3 = new Web3(provider);
+const web3 = new Web3(provider);
 
-export default web3;
+module.exports = web3;
