@@ -1,7 +1,7 @@
 const compiledFactory = require('./build/Factory.json');
 const web3 = require('./web3');
 
-const privateKey = 'your peivate key';
+const privateKey = 'your private key';
 
 (async () => {
     try {
